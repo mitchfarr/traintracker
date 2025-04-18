@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Light Rail Yard Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            color: #333;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+            font-size: 28px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .track {
+            background: #fff;
+            border: 2px solid;
+            border-radius: 10px;
+            width: 240px;
+            min-height: 240px;
+            padding: 15px;
+            position: relative;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .track:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .trains-container {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+            min-height: 120px;
+        }
+        .regular-track .trains-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .handoff .trains-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .train-icon {
+            width: 60px;
+            height: 60px;
+            cursor: grab;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .train-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+        .train-icon.dragging {
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
+        .maintenance {
+            border-color: #e67e22;
+            background: #fef5eb;
+        }
+        .storage {
+            border-color: #27ae60;
+            background: #eafaf1;
+        }
+        .test {
+            border-color: #8e44ad;
+            background: #f5eef8;
+        }
+        .handoff {
+            border-color: #2980b9;
+            background: #eaf2f8;
+        }
+        .sweep-box {
+            border-color: #16a085;
+            background: #e8f8f5;
+        }
+        /* Status colors */
+        .available { fill: #2ecc71; }
+        .unavailable { fill: #e74c3c; }
+        .in-service { fill: #3498db; }
+        .maintenance-status { fill: #f39c12; }
+        .sweep { fill: #1abc9c; }
+        .track h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #ddd;
+        }
+        .track-controls {
+            margin-top: 10px;
+        }
+        .track select, .track textarea {
+            width: 100%;
+            margin: 8px 0;
+            font-size: 13px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .track textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .section {
+            margin-top: 30px;
+            width: 100%;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #34495e;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        .train-id {
+            position: absolute;
+            bottom: -15px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .sweep-indicator {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #1abc9c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .status-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .status-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<h2>🚉 Interactive Light Rail Yard Tracker</h2>
+
+<div class="train-pool">
+    <div class="status-controls">
+        <button class="status-btn" onclick="setAllTrainsStatus('available')">Set All Available</button>
+        <button class="status-btn" onclick="setAllTrainsStatus('unavailable')">Set All Unavailable</button>
+    </div>
+    <div class="container" id="trainPool"></div>
+</div>
+
+<div class="section maintenance-section">
+    <h3>Maintenance Tracks (1-4)</h3>
+    <div class="container" id="maintenanceYard"></div>
+</div>
+
+<div class="section storage-section">
+    <h3>Storage Tracks (1-2, 7-8)</h3>
+    <div class="container" id="storageYard"></div>
+</div>
+
+<div class="section test-section">
+    <h3>Test Track</h3>
+    <div class="container" id="testTrack"></div>
+</div>
+
+<div class="section handoff-section">
+    <h3>Handoff Platforms</h3>
+    <div class="container" id="handoffPlatforms"></div>
+</div>
+
+<div class="section sweep-section">
+    <h3>Sweep Train Box</h3>
+    <div class="container" id="sweepTrainBox"></div>
+</div>
+
+<script>
+    // Train icon SVG template
+    function getTrainSVG(status, id) {
+        return `
+        <div style="position:relative;">
+            <svg viewBox="0 0 100 50" class="${status}">
+                <rect x="10" y="15" width="80" height="20" rx="5" ry="5"/>
+                <circle cx="25" cy="35" r="5"/>
+                <circle cx="75" cy="35" r="5"/>
+                <rect x="20" y="10" width="60" height="10" rx="3" ry="3"/>
+            </svg>
+            <div class="train-id">${id}</div>
+        </div>`;
+    }
+
+    const trains = Array.from({length: 18}, (_, i) => `LR${(i+1).toString().padStart(2, '0')}`);
+    const suffixes = ["-W", "-C", "-E"];
+
+    const maintenanceYard = document.getElementById('maintenanceYard');
+    const storageYard = document.getElementById('storageYard');
+    const testTrack = document.getElementById('testTrack');
+    const handoffPlatforms = document.getElementById('handoffPlatforms');
+    const sweepTrainBox = document.getElementById('sweepTrainBox');
+    const trainPool = document.getElementById('trainPool');
+
+    function createTrain(id) {
+        const div = document.createElement('div');
+        div.className = 'train-icon available';
+        div.innerHTML = getTrainSVG('available', id);
+        div.id = `train-${id}`;
+        div.draggable = true;
+        div.dataset.status = 'available';
+        div.dataset.id = id;
+        
+        div.addEventListener('dragstart', e => {
+            div.classList.add('dragging');
+            e.dataTransfer.setData('text', div.id);
+        });
+        
+        div.addEventListener('dragend', () => {
+            div.classList.remove('dragging');
+        });
+        
+        return div;
+    }
+
+    function createTrack(label, type) {
+        const div = document.createElement('div');
+        div.className = `track ${type} ${type === 'handoff' ? 'handoff' : 'regular-track'}`;
+        div.dataset.label = label;
+        div.innerHTML = `
+            <h4>${label}</h4>
+            <div class="trains-container"></div>
+            <div class="track-controls">
+                <select onchange="updateTrackStatus(this)">
+                    <option value="">-- Status --</option>
+                    <option value="available">Available</option>
+                    <option value="in-service">In Service</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
+                <textarea rows="2" placeholder="Track notes..."></textarea>
+            </div>
+        `;
+        
+        const container = div.querySelector('.trains-container');
+        
+        div.addEventListener('dragover', e => {
+            e.preventDefault();
+            div.style.boxShadow = '0 0 0 2px #3498db';
+        });
+        
+        div.addEventListener('dragleave', () => {
+            div.style.boxShadow = '';
+        });
+        
+        div.addEventListener('drop', e => {
+            e.preventDefault();
+            div.style.boxShadow = '';
+            const trainId = e.dataTransfer.getData('text');
+            const trainEl = document.getElementById(trainId);
+            
+            if (trainEl && !container.contains(trainEl)) {
+                if (div.classList.contains('sweep-box')) {
+                    markAsSweepTrain(trainEl);
+                } else {
+                    if (trainEl.classList.contains('sweep-train')) {
+                        unmarkAsSweepTrain(trainEl);
+                    }
+                    updateTrainStatus(trainEl, div.querySelector('select').value || 'available');
+                }
+                container.appendChild(trainEl);
+            }
+        });
+        
+        return div;
+    }
+
+    function markAsSweepTrain(trainEl) {
+        trainEl.classList.remove('available', 'unavailable', 'in-service', 'maintenance-status');
+        trainEl.classList.add('sweep-train');
+        trainEl.dataset.status = 'sweep';
+        trainEl.innerHTML = getTrainSVG('sweep', trainEl.dataset.id);
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'sweep-indicator';
+        indicator.textContent = 'SWEEP';
+        trainEl.querySelector('svg').parentNode.appendChild(indicator);
+    }
+
+    function unmarkAsSweepTrain(trainEl) {
+        trainEl.classList.remove('sweep-train');
+        trainEl.dataset.status = 'available';
+        trainEl.innerHTML = getTrainSVG('available', trainEl.dataset.id);
+    }
+
+    function updateTrainStatus(trainEl, status) {
+        if (trainEl.classList.contains('sweep-train')) return;
+        
+        trainEl.classList.remove('available', 'unavailable', 'in-service', 'maintenance-status');
+        trainEl.classList.add(status);
+        trainEl.dataset.status = status;
+        trainEl.innerHTML = getTrainSVG(status, trainEl.dataset.id);
+    }
+
+    function updateTrackStatus(selectElement) {
+        const track = selectElement.closest('.track');
+        const trainsInTrack = track.querySelectorAll('.train-icon');
+        
+        trainsInTrack.forEach(train => {
+            if (!train.classList.contains('sweep-train')) {
+                updateTrainStatus(train, selectElement.value || 'available');
+            }
+        });
+    }
+
+    function setAllTrainsStatus(status) {
+        const allTrains = document.querySelectorAll('#trainPool .train-icon');
+        allTrains.forEach(train => {
+            if (!train.classList.contains('sweep-train')) {
+                updateTrainStatus(train, status);
+            }
+        });
+    }
+
+    // Create maintenance tracks (1-4)
+    for (let i = 1; i <= 4; i++) {
+        suffixes.forEach(s => maintenanceYard.appendChild(createTrack(`M${i}${s}`, 'maintenance')));
+    }
+
+    // Create storage tracks (1-2, 7-8)
+    [1, 2, 7, 8].forEach(i => {
+        suffixes.forEach(s => storageYard.appendChild(createTrack(`S${i}${s}`, 'storage')));
+    });
+
+    // Create test track
+    suffixes.forEach(s => testTrack.appendChild(createTrack(`TEST${s}`, 'test')));
+
+    // Create handoff platforms
+    handoffPlatforms.appendChild(createTrack('HOP 1 (North)', 'handoff'));
+    handoffPlatforms.appendChild(createTrack('HOP 2 (South)', 'handoff'));
+
+    // Create sweep train box
+    const sweepBox = createTrack('Sweep Train Box', 'sweep-box');
+    sweepTrainBox.appendChild(sweepBox);
+
+    // Create trains
+    trains.forEach(trainId => trainPool.appendChild(createTrain(trainId)));
+</script>
+</body>
+</html>
