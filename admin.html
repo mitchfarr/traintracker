@@ -91,6 +91,43 @@
         .nav a:hover {
             text-decoration: underline;
         }
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .logs-table th, .logs-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .logs-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .logs-table tr:hover {
+            background: #f8f9fa;
+        }
+        .timestamp {
+            white-space: nowrap;
+        }
+        .action {
+            font-weight: bold;
+        }
+        .success-badge {
+            background: #27ae60;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .failure-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -121,6 +158,24 @@
         <div class="user-list">
             <h2>Existing Users</h2>
             <div id="userList"></div>
+        </div>
+
+        <div class="section">
+            <h2>Activity Logs</h2>
+            <div class="form-group">
+                <button onclick="refreshLogs()">Refresh Logs</button>
+            </div>
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="logsList"></tbody>
+            </table>
         </div>
     </div>
 
@@ -258,8 +313,54 @@
             }
         });
 
+        // Load logs
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action: 'get_logs' })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load logs');
+                }
+                
+                const data = await response.json();
+                const logsList = document.getElementById('logsList');
+                logsList.innerHTML = '';
+                
+                data.logs.reverse().forEach(log => {
+                    const row = document.createElement('tr');
+                    const timestamp = new Date(log.timestamp).toLocaleString();
+                    const details = JSON.stringify(log.details);
+                    const successBadge = log.details.success ? 
+                        '<span class="success-badge">Success</span>' : 
+                        '<span class="failure-badge">Failed</span>';
+                    
+                    row.innerHTML = `
+                        <td class="timestamp">${timestamp}</td>
+                        <td>${log.username}</td>
+                        <td class="action">${log.action} ${successBadge}</td>
+                        <td>${details}</td>
+                    `;
+                    logsList.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+            }
+        }
+
+        function refreshLogs() {
+            loadLogs();
+        }
+
         // Initial load
         loadUsers();
+        loadLogs();
     </script>
 </body>
 </html> 

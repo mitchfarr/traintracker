@@ -3,6 +3,22 @@ export async function handleAuth(context) {
     const { method } = request;
     const kv = context.env.TRAIN_TRACKER_KV;
 
+    // Helper function to log user activity
+    async function logActivity(username, action, details = {}) {
+        const logs = await kv.get('activity_logs', 'json') || [];
+        logs.push({
+            timestamp: new Date().toISOString(),
+            username,
+            action,
+            details
+        });
+        // Keep only the last 1000 logs
+        if (logs.length > 1000) {
+            logs.splice(0, logs.length - 1000);
+        }
+        await kv.put('activity_logs', JSON.stringify(logs));
+    }
+
     if (method === 'POST') {
         const data = await request.json();
         
@@ -28,6 +44,9 @@ export async function handleAuth(context) {
                 };
                 const token = btoa(JSON.stringify(tokenData));
                 
+                // Log successful login
+                await logActivity(username, 'login', { success: true });
+                
                 return new Response(JSON.stringify({
                     token,
                     username: user.username,
@@ -41,6 +60,9 @@ export async function handleAuth(context) {
                     }
                 });
             } else {
+                // Log failed login attempt
+                await logActivity(username, 'login', { success: false });
+                
                 return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
                     status: 401,
                     headers: {
@@ -84,6 +106,9 @@ export async function handleAuth(context) {
                     users[decoded.username].password = newPassword;
                     await kv.put('users', JSON.stringify(users));
                     
+                    // Log password change
+                    await logActivity(decoded.username, 'password_change', { success: true });
+                    
                     return new Response(JSON.stringify({ success: true }), {
                         headers: {
                             'Content-Type': 'application/json',
@@ -93,6 +118,9 @@ export async function handleAuth(context) {
                         }
                     });
                 } else {
+                    // Log failed password change attempt
+                    await logActivity(decoded.username, 'password_change', { success: false });
+                    
                     return new Response(JSON.stringify({ error: 'Current password is incorrect' }), {
                         status: 401,
                         headers: {
@@ -187,6 +215,10 @@ export async function handleAuth(context) {
                     };
                     
                     await kv.put('users', JSON.stringify(users));
+                    
+                    // Log user creation
+                    await logActivity(decoded.username, 'create_user', { username, success: true });
+                    
                     return new Response(JSON.stringify({ success: true }), {
                         headers: {
                             'Content-Type': 'application/json',
@@ -223,7 +255,22 @@ export async function handleAuth(context) {
                     
                     delete users[username];
                     await kv.put('users', JSON.stringify(users));
+                    
+                    // Log user deletion
+                    await logActivity(decoded.username, 'delete_user', { username, success: true });
+                    
                     return new Response(JSON.stringify({ success: true }), {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+                        }
+                    });
+                } else if (data.action === 'get_logs') {
+                    // Return activity logs
+                    const logs = await kv.get('activity_logs', 'json') || [];
+                    return new Response(JSON.stringify({ logs }), {
                         headers: {
                             'Content-Type': 'application/json',
                             'Access-Control-Allow-Origin': '*',
