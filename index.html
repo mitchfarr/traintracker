@@ -540,6 +540,9 @@
         const allTracks = document.querySelectorAll('.track');
         const trainPool = document.getElementById('trainPool');
         
+        // Create an array to store all trains
+        const allTrains = [];
+        
         allTracks.forEach(track => {
             const trains = track.querySelectorAll('.train-icon');
             trains.forEach(train => {
@@ -548,11 +551,25 @@
                 if (sweepIndicator) {
                     sweepIndicator.remove();
                 }
-                // Reset train status and move to pool
+                // Reset train status
                 train.classList.remove('sweep-train');
                 updateTrainStatus(train, 'available');
-                trainPool.appendChild(train);
+                // Add train to array
+                allTrains.push(train);
             });
+        });
+        
+        // Sort trains by their ID number
+        allTrains.sort((a, b) => {
+            const idA = parseInt(a.dataset.id.replace('LRV', ''));
+            const idB = parseInt(b.dataset.id.replace('LRV', ''));
+            return idA - idB;
+        });
+        
+        // Clear the train pool and append sorted trains
+        trainPool.innerHTML = '';
+        allTrains.forEach(train => {
+            trainPool.appendChild(train);
         });
         
         // Save the new state
