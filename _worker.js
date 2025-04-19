@@ -4,7 +4,7 @@ export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
         
-        if (url.pathname === '/state') {
+        if (url.pathname === '/api/state') {
             return onRequest({ request, env });
         }
         
