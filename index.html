@@ -220,6 +220,7 @@
     };
 
     async function saveState() {
+        console.log('Saving state...');
         // Collect current state
         const tracks = document.querySelectorAll('.track');
         tracks.forEach(track => {
@@ -235,50 +236,62 @@
             });
         });
 
+        console.log('State to save:', appState);
+
         // Save to Cloudflare
         try {
-            await fetch('/state', {
+            const response = await fetch('/state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(appState)
             });
+            const result = await response.json();
+            console.log('Save response:', result);
         } catch (error) {
             console.error('Failed to save state:', error);
         }
     }
 
     async function loadState() {
+        console.log('Loading state...');
         try {
             const response = await fetch('/state');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const state = await response.json();
-            appState = state;
+            console.log('Loaded state:', state);
+            
+            if (state && Object.keys(state).length > 0) {
+                appState = state;
 
-            // Restore track statuses and notes
-            Object.entries(appState.trackStatuses).forEach(([label, status]) => {
-                const track = document.querySelector(`.track[data-label="${label}"]`);
-                if (track) {
-                    track.querySelector('select').value = status;
-                }
-            });
+                // Restore track statuses and notes
+                Object.entries(appState.trackStatuses).forEach(([label, status]) => {
+                    const track = document.querySelector(`.track[data-label="${label}"]`);
+                    if (track) {
+                        track.querySelector('select').value = status;
+                    }
+                });
 
-            Object.entries(appState.trackNotes).forEach(([label, notes]) => {
-                const track = document.querySelector(`.track[data-label="${label}"]`);
-                if (track) {
-                    track.querySelector('textarea').value = notes;
-                }
-            });
+                Object.entries(appState.trackNotes).forEach(([label, notes]) => {
+                    const track = document.querySelector(`.track[data-label="${label}"]`);
+                    if (track) {
+                        track.querySelector('textarea').value = notes;
+                    }
+                });
 
-            // Restore train positions
-            Object.entries(appState.trainPositions).forEach(([trainId, trackLabel]) => {
-                const train = document.getElementById(trainId);
-                const track = document.querySelector(`.track[data-label="${trackLabel}"]`);
-                if (train && track) {
-                    const container = track.querySelector('.trains-container');
-                    container.appendChild(train);
-                }
-            });
+                // Restore train positions
+                Object.entries(appState.trainPositions).forEach(([trainId, trackLabel]) => {
+                    const train = document.getElementById(trainId);
+                    const track = document.querySelector(`.track[data-label="${trackLabel}"]`);
+                    if (train && track) {
+                        const container = track.querySelector('.trains-container');
+                        container.appendChild(train);
+                    }
+                });
+            }
         } catch (error) {
             console.error('Failed to load state:', error);
         }
@@ -375,6 +388,7 @@
                     updateTrainStatus(trainEl, div.querySelector('select').value || 'available');
                 }
                 container.appendChild(trainEl);
+                console.log('Train dropped, saving state...');
                 await saveState();
             }
         });
@@ -429,44 +443,49 @@
         });
     }
 
-    // Create test track
-    const testTrackGroup = document.createElement('div');
-    testTrackGroup.className = 'track-group';
-    suffixes.forEach(s => testTrackGroup.appendChild(createTrack(`TEST${s}`, 'test')));
-    testTrack.appendChild(testTrackGroup);
-
-    // Create storage tracks (1-2, 7-8)
-    [1, 2, 7, 8].forEach(i => {
-        const storageGroup = document.createElement('div');
-        storageGroup.className = 'track-group';
-        suffixes.forEach(s => storageGroup.appendChild(createTrack(`S${i}${s}`, 'storage')));
-        storageYard.appendChild(storageGroup);
-    });
-
-    // Create maintenance tracks (1-4)
-    for (let i = 1; i <= 4; i++) {
-        const maintenanceGroup = document.createElement('div');
-        maintenanceGroup.className = 'track-group';
-        suffixes.forEach(s => maintenanceGroup.appendChild(createTrack(`M${i}${s}`, 'maintenance')));
-        maintenanceYard.appendChild(maintenanceGroup);
-    }
-
-    // Create handoff platforms
-    const handoffGroup = document.createElement('div');
-    handoffGroup.className = 'track-group';
-    handoffGroup.appendChild(createTrack('HOP 1 (North)', 'handoff'));
-    handoffGroup.appendChild(createTrack('HOP 2 (South)', 'handoff'));
-    handoffPlatforms.appendChild(handoffGroup);
-
-    // Create sweep train box
-    const sweepBox = createTrack('Sweep Train Box', 'sweep-box');
-    sweepTrainBox.appendChild(sweepBox);
-
-    // Create trains
-    trains.forEach(trainId => trainPool.appendChild(createTrain(trainId)));
-
     // Load state when page loads
-    document.addEventListener('DOMContentLoaded', loadState);
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing...');
+        // Create all tracks and trains first
+        // Create maintenance tracks (1-4)
+        for (let i = 1; i <= 4; i++) {
+            const maintenanceGroup = document.createElement('div');
+            maintenanceGroup.className = 'track-group';
+            suffixes.forEach(s => maintenanceGroup.appendChild(createTrack(`M${i}${s}`, 'maintenance')));
+            maintenanceYard.appendChild(maintenanceGroup);
+        }
+
+        // Create storage tracks (1-2, 7-8)
+        [1, 2, 7, 8].forEach(i => {
+            const storageGroup = document.createElement('div');
+            storageGroup.className = 'track-group';
+            suffixes.forEach(s => storageGroup.appendChild(createTrack(`S${i}${s}`, 'storage')));
+            storageYard.appendChild(storageGroup);
+        });
+
+        // Create test track
+        const testTrackGroup = document.createElement('div');
+        testTrackGroup.className = 'track-group';
+        suffixes.forEach(s => testTrackGroup.appendChild(createTrack(`TEST${s}`, 'test')));
+        testTrack.appendChild(testTrackGroup);
+
+        // Create handoff platforms
+        const handoffGroup = document.createElement('div');
+        handoffGroup.className = 'track-group';
+        handoffGroup.appendChild(createTrack('HOP 1 (North)', 'handoff'));
+        handoffGroup.appendChild(createTrack('HOP 2 (South)', 'handoff'));
+        handoffPlatforms.appendChild(handoffGroup);
+
+        // Create sweep train box
+        const sweepBox = createTrack('Sweep Train Box', 'sweep-box');
+        sweepTrainBox.appendChild(sweepBox);
+
+        // Create trains
+        trains.forEach(trainId => trainPool.appendChild(createTrain(trainId)));
+
+        // Then load the state
+        loadState();
+    });
 </script>
 </body>
 </html>
