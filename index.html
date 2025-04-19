@@ -560,6 +560,18 @@
                 const numericId = parseInt(trainId.replace('LRV', ''));
                 allTrains.push({ train, numericId });
             });
+            
+            // Reset track status dropdown to default
+            const statusSelect = track.querySelector('select');
+            if (statusSelect) {
+                statusSelect.value = '';
+            }
+            
+            // Clear track notes
+            const notesTextarea = track.querySelector('textarea');
+            if (notesTextarea) {
+                notesTextarea.value = '';
+            }
         });
         
         // Sort trains by their numeric ID
