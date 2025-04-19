@@ -2,6 +2,7 @@ export async function handleAuth(context) {
     const { request } = context;
     const { method } = request;
     const kv = context.env.TRAIN_TRACKER_KV;
+    const url = new URL(request.url);
 
     // Helper function to log user activity
     async function logActivity(username, action, details = {}) {
@@ -22,15 +23,15 @@ export async function handleAuth(context) {
     if (method === 'POST') {
         const data = await request.json();
         
-        if (request.url.endsWith('/api/login')) {
+        if (url.pathname === '/api/login') {
             // Handle login
             const { username, password } = data;
             
             // Get stored credentials
             const users = await kv.get('users', 'json') || {
-                admin: {
-                    username: 'admin',
-                    password: 'admin123',
+                Mitch: {
+                    username: 'Mitch',
+                    password: 'Mitch',
                     role: 'admin'
                 }
             };
@@ -73,7 +74,7 @@ export async function handleAuth(context) {
                     }
                 });
             }
-        } else if (request.url.endsWith('/api/change-password')) {
+        } else if (url.pathname === '/api/change-password') {
             // Handle password change
             const { currentPassword, newPassword } = data;
             const token = request.headers.get('Authorization')?.split(' ')[1];
@@ -142,7 +143,7 @@ export async function handleAuth(context) {
                     }
                 });
             }
-        } else if (request.url.endsWith('/api/users')) {
+        } else if (url.pathname === '/api/users') {
             // Handle user management
             const token = request.headers.get('Authorization')?.split(' ')[1];
             
