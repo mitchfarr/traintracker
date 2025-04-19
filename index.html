@@ -554,21 +554,19 @@
                 // Reset train status
                 train.classList.remove('sweep-train');
                 updateTrainStatus(train, 'available');
-                // Add train to array
-                allTrains.push(train);
+                // Add train to array with its numeric ID
+                const trainId = train.dataset.id;
+                const numericId = parseInt(trainId.replace('LRV', ''));
+                allTrains.push({ train, numericId });
             });
         });
         
-        // Sort trains by their ID number
-        allTrains.sort((a, b) => {
-            const idA = parseInt(a.dataset.id.replace('LRV', ''));
-            const idB = parseInt(b.dataset.id.replace('LRV', ''));
-            return idA - idB;
-        });
+        // Sort trains by their numeric ID
+        allTrains.sort((a, b) => a.numericId - b.numericId);
         
         // Clear the train pool and append sorted trains
         trainPool.innerHTML = '';
-        allTrains.forEach(train => {
+        allTrains.forEach(({ train }) => {
             trainPool.appendChild(train);
         });
         
