@@ -17,20 +17,28 @@ export async function handleAuth(context) {
                 // Handle login
                 const { username, password } = data;
                 
-                // Hardcoded default user for testing
-                const defaultUser = {
-                    username: 'Mitch',
-                    password: 'Mitch',
-                    role: 'admin'
+                // Hardcoded users for testing
+                const users = {
+                    Mitch: {
+                        username: 'Mitch',
+                        password: 'Mitch',
+                        role: 'admin'
+                    },
+                    StefanoP: {
+                        username: 'StefanoP',
+                        password: 'StefanoP',
+                        role: 'user'
+                    }
                 };
                 
                 console.log('Login attempt:', { username, password });
-                console.log('Default user:', defaultUser);
+                console.log('Available users:', users);
                 
-                if (username === defaultUser.username && password === defaultUser.password) {
+                const user = users[username];
+                if (user && password === user.password) {
                     const tokenData = {
-                        username: defaultUser.username,
-                        role: defaultUser.role,
+                        username: user.username,
+                        role: user.role,
                         timestamp: Date.now()
                     };
                     const token = btoa(JSON.stringify(tokenData));
@@ -40,8 +48,8 @@ export async function handleAuth(context) {
                     
                     return new Response(JSON.stringify({
                         token,
-                        username: defaultUser.username,
-                        role: defaultUser.role
+                        username: user.username,
+                        role: user.role
                     }), {
                         headers: {
                             'Content-Type': 'application/json',
@@ -55,7 +63,8 @@ export async function handleAuth(context) {
                     await logActivity(username, 'login', { 
                         success: false,
                         attemptedUsername: username,
-                        passwordMatch: password === defaultUser.password
+                        userExists: !!user,
+                        passwordMatch: user ? (password === user.password) : false
                     });
                     
                     return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
