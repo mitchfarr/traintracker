@@ -536,7 +536,7 @@
     }
 
     function resetAllTrains() {
-        // Get all trains from all tracks
+        // Get all trains from all tracks and the pool
         const allTracks = document.querySelectorAll('.track');
         const trainPool = document.getElementById('trainPool');
         
@@ -574,24 +574,22 @@
             }
         });
         
+        // Also collect trains from the pool
+        const poolTrains = trainPool.querySelectorAll('.train-icon');
+        poolTrains.forEach(train => {
+            const trainId = train.dataset.id;
+            const numericId = parseInt(trainId.replace('LRV', ''));
+            allTrains.push({ train, numericId });
+        });
+        
         // Sort trains by their numeric ID
         allTrains.sort((a, b) => a.numericId - b.numericId);
         
-        // Clear the train pool first
+        // Clear the train pool and add sorted trains
         trainPool.innerHTML = '';
-        
-        // Create a container for the trains
-        const trainsContainer = document.createElement('div');
-        trainsContainer.className = 'container';
-        trainsContainer.id = 'trainPool';
-        
-        // Add sorted trains to the container
         allTrains.forEach(({ train }) => {
-            trainsContainer.appendChild(train);
+            trainPool.appendChild(train);
         });
-        
-        // Replace the old train pool with the new one
-        trainPool.parentNode.replaceChild(trainsContainer, trainPool);
         
         // Save the new state
         saveState();
