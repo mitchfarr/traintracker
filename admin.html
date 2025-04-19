@@ -95,6 +95,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 14px;
         }
         .logs-table th, .logs-table td {
             padding: 10px;
@@ -104,12 +105,15 @@
         .logs-table th {
             background: #f8f9fa;
             font-weight: bold;
+            position: sticky;
+            top: 0;
         }
         .logs-table tr:hover {
             background: #f8f9fa;
         }
         .timestamp {
             white-space: nowrap;
+            color: #666;
         }
         .action {
             font-weight: bold;
@@ -120,6 +124,7 @@
             padding: 2px 6px;
             border-radius: 10px;
             font-size: 12px;
+            margin-left: 5px;
         }
         .failure-badge {
             background: #e74c3c;
@@ -127,6 +132,40 @@
             padding: 2px 6px;
             border-radius: 10px;
             font-size: 12px;
+            margin-left: 5px;
+        }
+        .details {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .details:hover {
+            white-space: normal;
+            overflow: visible;
+        }
+        .move-train {
+            color: #3498db;
+        }
+        .change-status {
+            color: #e67e22;
+        }
+        .update-notes {
+            color: #16a085;
+        }
+        .user-action {
+            color: #9b59b6;
+        }
+        .filter-controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .filter-controls select, .filter-controls input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -162,7 +201,18 @@
 
         <div class="section">
             <h2>Activity Logs</h2>
-            <div class="form-group">
+            <div class="filter-controls">
+                <select id="actionFilter">
+                    <option value="">All Actions</option>
+                    <option value="move_train">Train Movements</option>
+                    <option value="change_track_status">Track Status Changes</option>
+                    <option value="update_track_notes">Track Notes Updates</option>
+                    <option value="login">Logins</option>
+                    <option value="password_change">Password Changes</option>
+                    <option value="create_user">User Creation</option>
+                    <option value="delete_user">User Deletion</option>
+                </select>
+                <input type="text" id="userFilter" placeholder="Filter by username">
                 <button onclick="refreshLogs()">Refresh Logs</button>
             </div>
             <table class="logs-table">
@@ -333,19 +383,53 @@
                 const logsList = document.getElementById('logsList');
                 logsList.innerHTML = '';
                 
+                const actionFilter = document.getElementById('actionFilter').value;
+                const userFilter = document.getElementById('userFilter').value.toLowerCase();
+                
                 data.logs.reverse().forEach(log => {
+                    // Apply filters
+                    if (actionFilter && log.action !== actionFilter) return;
+                    if (userFilter && !log.username.toLowerCase().includes(userFilter)) return;
+                    
                     const row = document.createElement('tr');
                     const timestamp = new Date(log.timestamp).toLocaleString();
-                    const details = JSON.stringify(log.details);
                     const successBadge = log.details.success ? 
                         '<span class="success-badge">Success</span>' : 
                         '<span class="failure-badge">Failed</span>';
                     
+                    // Format details based on action type
+                    let details = '';
+                    let actionClass = '';
+                    
+                    switch (log.action) {
+                        case 'move_train':
+                            actionClass = 'move-train';
+                            details = `Moved train ${log.details.trainId} from ${log.details.from} to ${log.details.to}`;
+                            break;
+                        case 'change_track_status':
+                            actionClass = 'change-status';
+                            details = `Changed track ${log.details.trackId} status from ${log.details.from} to ${log.details.to}`;
+                            break;
+                        case 'update_track_notes':
+                            actionClass = 'update-notes';
+                            details = `Updated notes for track ${log.details.trackId}`;
+                            break;
+                        case 'login':
+                        case 'password_change':
+                        case 'create_user':
+                        case 'delete_user':
+                            actionClass = 'user-action';
+                            details = JSON.stringify(log.details);
+                            break;
+                        default:
+                            details = JSON.stringify(log.details);
+                    }
+                    
                     row.innerHTML = `
                         <td class="timestamp">${timestamp}</td>
                         <td>${log.username}</td>
-                        <td class="action">${log.action} ${successBadge}</td>
-                        <td>${details}</td>
+                        <td class="action ${actionClass}">${log.action} ${successBadge}</td>
+                        <td class="details">${details}</td>
                     `;
                     logsList.appendChild(row);
                 });
@@ -357,6 +441,10 @@
         function refreshLogs() {
             loadLogs();
         }
+
+        // Add event listeners for filters
+        document.getElementById('actionFilter').addEventListener('change', loadLogs);
+        document.getElementById('userFilter').addEventListener('input', loadLogs);
 
         // Initial load
         loadUsers();
