@@ -28,13 +28,21 @@ export async function handleAuth(context) {
             const { username, password } = data;
             
             // Get stored credentials
-            const users = await kv.get('users', 'json') || {
-                Mitch: {
-                    username: 'Mitch',
-                    password: 'Mitch',
-                    role: 'admin'
-                }
-            };
+            let users = await kv.get('users', 'json');
+            if (!users) {
+                // Initialize with default admin user if no users exist
+                users = {
+                    Mitch: {
+                        username: 'Mitch',
+                        password: 'Mitch',
+                        role: 'admin'
+                    }
+                };
+                await kv.put('users', JSON.stringify(users));
+            }
+            
+            console.log('Attempting login for user:', username);
+            console.log('Stored users:', users);
             
             const user = users[username];
             if (user && password === user.password) {
@@ -62,7 +70,12 @@ export async function handleAuth(context) {
                 });
             } else {
                 // Log failed login attempt
-                await logActivity(username, 'login', { success: false });
+                await logActivity(username, 'login', { 
+                    success: false,
+                    attemptedUsername: username,
+                    userExists: !!user,
+                    passwordMatch: user ? (password === user.password) : false
+                });
                 
                 return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
                     status: 401,
