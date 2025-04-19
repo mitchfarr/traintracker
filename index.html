@@ -685,6 +685,29 @@
             saveState();
         }
 
+        // Initialize event listeners
+        function initializeEventListeners() {
+            const logoutBtn = document.getElementById('logout');
+            const changePasswordBtn = document.getElementById('changePassword');
+            
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('role');
+                    window.location.href = '/auth.html';
+                });
+            }
+            
+            if (changePasswordBtn) {
+                changePasswordBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    document.getElementById('passwordModal').style.display = 'block';
+                });
+            }
+        }
+
         // Load state when page loads
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, initializing...');
@@ -728,6 +751,9 @@
             // Then load the state
             loadState();
 
+            // Initialize event listeners
+            initializeEventListeners();
+            
             // Check authentication on page load
             const token = localStorage.getItem('token');
             const username = localStorage.getItem('username');
@@ -749,29 +775,7 @@
             
             // Initialize the application
             initializeApp();
-
-            // Add event listeners for logout and change password
-            document.getElementById('logout').addEventListener('click', (e) => {
-                e.preventDefault();
-                logout();
-            });
-            
-            document.getElementById('changePassword').addEventListener('click', (e) => {
-                e.preventDefault();
-                showPasswordModal();
-            });
         });
-
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('username');
-            localStorage.removeItem('role');
-            window.location.href = '/auth.html';
-        }
-
-        function showPasswordModal() {
-            document.getElementById('passwordModal').style.display = 'block';
-        }
 
         function hidePasswordModal() {
             document.getElementById('passwordModal').style.display = 'none';
