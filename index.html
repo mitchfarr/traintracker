@@ -172,6 +172,39 @@
             background: #3498db;
             color: white;
         }
+        @media (max-width: 768px) {
+            .container {
+                gap: 10px;
+            }
+            .track {
+                width: calc(50% - 5px);
+                min-height: 160px;
+                padding: 8px;
+            }
+            .train-icon {
+                width: 40px;
+                height: 40px;
+            }
+            .track h4 {
+                font-size: 12px;
+            }
+            .track select, .track textarea {
+                font-size: 11px;
+                padding: 4px;
+            }
+            .status-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            .train-id {
+                font-size: 8px;
+            }
+        }
+        .train-icon.dragging {
+            opacity: 0.7;
+            transform: scale(1.1);
+            touch-action: none;
+        }
     </style>
 </head>
 <body>
@@ -330,6 +363,60 @@
         div.dataset.status = 'available';
         div.dataset.id = id;
         
+        // Touch and drag event handlers
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        div.addEventListener('touchstart', e => {
+            e.preventDefault();
+            div.classList.add('dragging');
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+        
+        div.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+            
+            // Only start dragging if moved more than 10px
+            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                div.style.position = 'fixed';
+                div.style.left = `${touch.clientX - 30}px`;
+                div.style.top = `${touch.clientY - 30}px`;
+                div.style.zIndex = '1000';
+            }
+        }, { passive: false });
+        
+        div.addEventListener('touchend', e => {
+            e.preventDefault();
+            div.classList.remove('dragging');
+            div.style.position = '';
+            div.style.left = '';
+            div.style.top = '';
+            div.style.zIndex = '';
+            
+            // Find the track under the touch point
+            const touch = e.changedTouches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const track = element?.closest('.track');
+            
+            if (track && !track.querySelector('.trains-container').contains(div)) {
+                const container = track.querySelector('.trains-container');
+                if (track.classList.contains('sweep-box')) {
+                    markAsSweepTrain(div);
+                } else {
+                    if (div.classList.contains('sweep-train')) {
+                        unmarkAsSweepTrain(div);
+                    }
+                    updateTrainStatus(div, track.querySelector('select').value || 'available');
+                }
+                container.appendChild(div);
+                saveState();
+            }
+        }, { passive: false });
+        
         div.addEventListener('dragstart', e => {
             div.classList.add('dragging');
             e.dataTransfer.setData('text', div.id);
@@ -363,6 +450,11 @@
         
         const container = div.querySelector('.trains-container');
         
+        // Touch event handlers for tracks
+        div.addEventListener('touchmove', e => {
+            e.preventDefault();
+        }, { passive: false });
+        
         div.addEventListener('dragover', e => {
             e.preventDefault();
             div.style.boxShadow = '0 0 0 2px #3498db';
@@ -388,7 +480,6 @@
                     updateTrainStatus(trainEl, div.querySelector('select').value || 'available');
                 }
                 container.appendChild(trainEl);
-                console.log('Train dropped, saving state...');
                 await saveState();
             }
         });
