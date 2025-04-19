@@ -17,11 +17,12 @@ export async function handleAuth(context) {
             };
             
             if (username === storedCredentials.username && password === storedCredentials.password) {
-                const token = Buffer.from(JSON.stringify({
+                const tokenData = {
                     username: storedCredentials.username,
                     role: 'admin',
                     timestamp: Date.now()
-                })).toString('base64');
+                };
+                const token = btoa(JSON.stringify(tokenData));
                 
                 return new Response(JSON.stringify({
                     token,
@@ -32,7 +33,7 @@ export async function handleAuth(context) {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type'
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                     }
                 });
             } else {
@@ -42,7 +43,7 @@ export async function handleAuth(context) {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type'
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                     }
                 });
             }
@@ -58,13 +59,13 @@ export async function handleAuth(context) {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type'
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                     }
                 });
             }
             
             try {
-                const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+                const decoded = JSON.parse(atob(token));
                 
                 // Get stored credentials
                 const storedCredentials = await kv.get('admin-credentials', 'json') || {
@@ -84,7 +85,7 @@ export async function handleAuth(context) {
                             'Content-Type': 'application/json',
                             'Access-Control-Allow-Origin': '*',
                             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                            'Access-Control-Allow-Headers': 'Content-Type'
+                            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                         }
                     });
                 } else {
@@ -94,7 +95,7 @@ export async function handleAuth(context) {
                             'Content-Type': 'application/json',
                             'Access-Control-Allow-Origin': '*',
                             'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                            'Access-Control-Allow-Headers': 'Content-Type'
+                            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                         }
                     });
                 }
@@ -105,7 +106,7 @@ export async function handleAuth(context) {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type'
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
                     }
                 });
             }
@@ -115,7 +116,7 @@ export async function handleAuth(context) {
             headers: {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
             }
         });
     }
