@@ -29,6 +29,8 @@ export async function handleAuth(context) {
             
             // Get stored credentials
             let users = await kv.get('users', 'json');
+            console.log('Initial users from KV:', users);
+            
             if (!users) {
                 // Initialize with default admin user if no users exist
                 users = {
@@ -38,6 +40,7 @@ export async function handleAuth(context) {
                         role: 'admin'
                     }
                 };
+                console.log('No users found, initializing with default:', users);
                 await kv.put('users', JSON.stringify(users));
             }
             
@@ -45,6 +48,9 @@ export async function handleAuth(context) {
             console.log('Stored users:', users);
             
             const user = users[username];
+            console.log('Found user:', user);
+            console.log('Password match:', user ? (password === user.password) : 'no user found');
+            
             if (user && password === user.password) {
                 const tokenData = {
                     username: user.username,
@@ -74,7 +80,8 @@ export async function handleAuth(context) {
                     success: false,
                     attemptedUsername: username,
                     userExists: !!user,
-                    passwordMatch: user ? (password === user.password) : false
+                    passwordMatch: user ? (password === user.password) : false,
+                    storedUsers: users
                 });
                 
                 return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
