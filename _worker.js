@@ -9,7 +9,7 @@ export default {
             return onRequest({ request, env });
         }
         
-        if (url.pathname === '/api/login' || url.pathname === '/api/change-password') {
+        if (url.pathname === '/api/login' || url.pathname === '/api/change-password' || url.pathname === '/api/users') {
             return handleAuth({ request, env });
         }
         
