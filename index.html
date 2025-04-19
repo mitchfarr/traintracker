@@ -577,10 +577,21 @@
         // Sort trains by their numeric ID
         allTrains.sort((a, b) => a.numericId - b.numericId);
         
-        // Move sorted trains to the pool
+        // Clear the train pool first
+        trainPool.innerHTML = '';
+        
+        // Create a container for the trains
+        const trainsContainer = document.createElement('div');
+        trainsContainer.className = 'container';
+        trainsContainer.id = 'trainPool';
+        
+        // Add sorted trains to the container
         allTrains.forEach(({ train }) => {
-            trainPool.appendChild(train);
+            trainsContainer.appendChild(train);
         });
+        
+        // Replace the old train pool with the new one
+        trainPool.parentNode.replaceChild(trainsContainer, trainPool);
         
         // Save the new state
         saveState();
