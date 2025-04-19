@@ -212,6 +212,78 @@
 </div>
 
 <script>
+    // State management
+    let appState = {
+        trainPositions: {},
+        trackStatuses: {},
+        trackNotes: {}
+    };
+
+    async function saveState() {
+        // Collect current state
+        const tracks = document.querySelectorAll('.track');
+        tracks.forEach(track => {
+            const label = track.dataset.label;
+            const status = track.querySelector('select').value;
+            const notes = track.querySelector('textarea').value;
+            const trains = Array.from(track.querySelectorAll('.train-icon')).map(train => train.id);
+            
+            appState.trackStatuses[label] = status;
+            appState.trackNotes[label] = notes;
+            trains.forEach(trainId => {
+                appState.trainPositions[trainId] = label;
+            });
+        });
+
+        // Save to Cloudflare
+        try {
+            await fetch('/state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(appState)
+            });
+        } catch (error) {
+            console.error('Failed to save state:', error);
+        }
+    }
+
+    async function loadState() {
+        try {
+            const response = await fetch('/state');
+            const state = await response.json();
+            appState = state;
+
+            // Restore track statuses and notes
+            Object.entries(appState.trackStatuses).forEach(([label, status]) => {
+                const track = document.querySelector(`.track[data-label="${label}"]`);
+                if (track) {
+                    track.querySelector('select').value = status;
+                }
+            });
+
+            Object.entries(appState.trackNotes).forEach(([label, notes]) => {
+                const track = document.querySelector(`.track[data-label="${label}"]`);
+                if (track) {
+                    track.querySelector('textarea').value = notes;
+                }
+            });
+
+            // Restore train positions
+            Object.entries(appState.trainPositions).forEach(([trainId, trackLabel]) => {
+                const train = document.getElementById(trainId);
+                const track = document.querySelector(`.track[data-label="${trackLabel}"]`);
+                if (train && track) {
+                    const container = track.querySelector('.trains-container');
+                    container.appendChild(train);
+                }
+            });
+        } catch (error) {
+            console.error('Failed to load state:', error);
+        }
+    }
+
     // Train icon SVG template
     function getTrainSVG(status, id) {
         return `
@@ -265,14 +337,14 @@
             <h4>${label}</h4>
             <div class="trains-container"></div>
             <div class="track-controls">
-                <select onchange="updateTrackStatus(this)">
+                <select onchange="updateTrackStatus(this); saveState();">
                     <option value="">-- Status --</option>
                     <option value="available">Available</option>
                     <option value="in-service">In Service</option>
                     <option value="maintenance">Maintenance</option>
                     <option value="unavailable">Unavailable</option>
                 </select>
-                <textarea rows="2" placeholder="Track notes..."></textarea>
+                <textarea rows="2" placeholder="Track notes..." onchange="saveState();"></textarea>
             </div>
         `;
         
@@ -287,7 +359,7 @@
             div.style.boxShadow = '';
         });
         
-        div.addEventListener('drop', e => {
+        div.addEventListener('drop', async e => {
             e.preventDefault();
             div.style.boxShadow = '';
             const trainId = e.dataTransfer.getData('text');
@@ -303,6 +375,7 @@
                     updateTrainStatus(trainEl, div.querySelector('select').value || 'available');
                 }
                 container.appendChild(trainEl);
+                await saveState();
             }
         });
         
@@ -391,6 +464,9 @@
 
     // Create trains
     trains.forEach(trainId => trainPool.appendChild(createTrain(trainId)));
+
+    // Load state when page loads
+    document.addEventListener('DOMContentLoaded', loadState);
 </script>
 </body>
 </html>
