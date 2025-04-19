@@ -749,6 +749,17 @@
             
             // Initialize the application
             initializeApp();
+
+            // Add event listeners for logout and change password
+            document.getElementById('logout').addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+            
+            document.getElementById('changePassword').addEventListener('click', (e) => {
+                e.preventDefault();
+                showPasswordModal();
+            });
         });
 
         function logout() {
