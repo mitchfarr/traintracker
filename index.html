@@ -28,8 +28,8 @@
             border: 2px solid;
             border-radius: 10px;
             width: calc(33.33% - 10px);
-            min-height: 240px;
-            padding: 15px;
+            min-height: 180px;
+            padding: 10px;
             position: relative;
             box-shadow: 0 3px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s;
@@ -40,9 +40,9 @@
         }
         .trains-container {
             display: grid;
-            gap: 8px;
-            margin-top: 10px;
-            min-height: 120px;
+            gap: 6px;
+            margin-top: 8px;
+            min-height: 90px;
         }
         .regular-track .trains-container {
             grid-template-columns: repeat(3, 1fr);
@@ -51,8 +51,8 @@
             grid-template-columns: repeat(2, 1fr);
         }
         .train-icon {
-            width: 60px;
-            height: 60px;
+            width: 45px;
+            height: 45px;
             cursor: grab;
             transition: transform 0.2s;
             position: relative;
@@ -92,11 +92,11 @@
         .maintenance-status { fill: #f39c12; }
         .sweep { fill: #1abc9c; }
         .track h4 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
+            margin: 0 0 8px 0;
+            font-size: 14px;
             font-weight: 600;
             color: #2c3e50;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 1px dashed #ddd;
         }
         .track-controls {
@@ -104,15 +104,15 @@
         }
         .track select, .track textarea {
             width: 100%;
-            margin: 8px 0;
-            font-size: 13px;
-            padding: 6px;
+            margin: 6px 0;
+            font-size: 12px;
+            padding: 4px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
         .track textarea {
             resize: vertical;
-            min-height: 60px;
+            min-height: 40px;
         }
         .section {
             margin-top: 30px;
