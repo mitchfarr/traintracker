@@ -7,9 +7,11 @@ export default {
         
         // Handle API routes
         if (url.pathname.startsWith('/api/')) {
-            if (url.pathname.startsWith('/api/auth')) {
+            if (url.pathname === '/api/login' || 
+                url.pathname === '/api/change-password' || 
+                url.pathname === '/api/users') {
                 return handleAuth({ request, env });
-            } else if (url.pathname.startsWith('/api/state')) {
+            } else if (url.pathname === '/api/state') {
                 return handleState({ request, env });
             }
         }
