@@ -543,6 +543,7 @@
         // Create an array to store all trains
         const allTrains = [];
         
+        // First, collect all trains from tracks
         allTracks.forEach(track => {
             const trains = track.querySelectorAll('.train-icon');
             trains.forEach(train => {
@@ -564,8 +565,7 @@
         // Sort trains by their numeric ID
         allTrains.sort((a, b) => a.numericId - b.numericId);
         
-        // Clear the train pool and append sorted trains
-        trainPool.innerHTML = '';
+        // Move sorted trains to the pool
         allTrains.forEach(({ train }) => {
             trainPool.appendChild(train);
         });
