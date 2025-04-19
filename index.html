@@ -24,6 +24,12 @@
             justify-content: flex-start;
             width: 100%;
         }
+        .track-group {
+            display: flex;
+            width: 100%;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
         .track {
             background: #fff;
             border: 2px solid;
@@ -34,7 +40,6 @@
             position: relative;
             box-shadow: 0 3px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s;
-            flex: 0 0 calc(33.33% - 10px);
         }
         .track:hover {
             transform: translateY(-3px);
@@ -351,22 +356,34 @@
         });
     }
 
-    // Create maintenance tracks (1-4)
-    for (let i = 1; i <= 4; i++) {
-        suffixes.forEach(s => maintenanceYard.appendChild(createTrack(`M${i}${s}`, 'maintenance')));
-    }
+    // Create test track
+    const testTrackGroup = document.createElement('div');
+    testTrackGroup.className = 'track-group';
+    suffixes.forEach(s => testTrackGroup.appendChild(createTrack(`TEST${s}`, 'test')));
+    testTrack.appendChild(testTrackGroup);
 
     // Create storage tracks (1-2, 7-8)
     [1, 2, 7, 8].forEach(i => {
-        suffixes.forEach(s => storageYard.appendChild(createTrack(`S${i}${s}`, 'storage')));
+        const storageGroup = document.createElement('div');
+        storageGroup.className = 'track-group';
+        suffixes.forEach(s => storageGroup.appendChild(createTrack(`S${i}${s}`, 'storage')));
+        storageYard.appendChild(storageGroup);
     });
 
-    // Create test track
-    suffixes.forEach(s => testTrack.appendChild(createTrack(`TEST${s}`, 'test')));
+    // Create maintenance tracks (1-4)
+    for (let i = 1; i <= 4; i++) {
+        const maintenanceGroup = document.createElement('div');
+        maintenanceGroup.className = 'track-group';
+        suffixes.forEach(s => maintenanceGroup.appendChild(createTrack(`M${i}${s}`, 'maintenance')));
+        maintenanceYard.appendChild(maintenanceGroup);
+    }
 
     // Create handoff platforms
-    handoffPlatforms.appendChild(createTrack('HOP 1 (North)', 'handoff'));
-    handoffPlatforms.appendChild(createTrack('HOP 2 (South)', 'handoff'));
+    const handoffGroup = document.createElement('div');
+    handoffGroup.className = 'track-group';
+    handoffGroup.appendChild(createTrack('HOP 1 (North)', 'handoff'));
+    handoffGroup.appendChild(createTrack('HOP 2 (South)', 'handoff'));
+    handoffPlatforms.appendChild(handoffGroup);
 
     // Create sweep train box
     const sweepBox = createTrack('Sweep Train Box', 'sweep-box');
