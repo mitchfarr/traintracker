@@ -215,6 +215,7 @@
     <div class="status-controls">
         <button class="status-btn" onclick="setAllTrainsStatus('available')">Set All Available</button>
         <button class="status-btn" onclick="setAllTrainsStatus('unavailable')">Set All Unavailable</button>
+        <button class="status-btn" onclick="resetAllTrains()" style="background: #e74c3c;">Reset All Trains</button>
     </div>
     <div class="container" id="trainPool"></div>
 </div>
@@ -532,6 +533,30 @@
                 updateTrainStatus(train, status);
             }
         });
+    }
+
+    function resetAllTrains() {
+        // Get all trains from all tracks
+        const allTracks = document.querySelectorAll('.track');
+        const trainPool = document.getElementById('trainPool');
+        
+        allTracks.forEach(track => {
+            const trains = track.querySelectorAll('.train-icon');
+            trains.forEach(train => {
+                // Remove sweep indicator if present
+                const sweepIndicator = train.querySelector('.sweep-indicator');
+                if (sweepIndicator) {
+                    sweepIndicator.remove();
+                }
+                // Reset train status and move to pool
+                train.classList.remove('sweep-train');
+                updateTrainStatus(train, 'available');
+                trainPool.appendChild(train);
+            });
+        });
+        
+        // Save the new state
+        saveState();
     }
 
     // Load state when page loads
