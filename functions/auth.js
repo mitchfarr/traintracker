@@ -6,22 +6,7 @@ export async function handleAuth(context) {
 
     // Helper function to log user activity
     async function logActivity(username, action, details = {}) {
-        try {
-            const logs = await kv.get('activity_logs', 'json') || [];
-            logs.push({
-                timestamp: new Date().toISOString(),
-                username,
-                action,
-                details
-            });
-            // Keep only the last 1000 logs
-            if (logs.length > 1000) {
-                logs.splice(0, logs.length - 1000);
-            }
-            await kv.put('activity_logs', JSON.stringify(logs));
-        } catch (error) {
-            console.error('Error logging activity:', error);
-        }
+        console.log('Activity:', { username, action, details });
     }
 
     if (method === 'POST') {
@@ -32,45 +17,20 @@ export async function handleAuth(context) {
                 // Handle login
                 const { username, password } = data;
                 
-                // Get stored credentials
-                let users;
-                try {
-                    users = await kv.get('users', 'json');
-                    console.log('Initial users from KV:', users);
-                } catch (error) {
-                    console.error('Error reading users from KV:', error);
-                    users = null;
-                }
+                // Hardcoded default user for testing
+                const defaultUser = {
+                    username: 'Mitch',
+                    password: 'Mitch',
+                    role: 'admin'
+                };
                 
-                if (!users) {
-                    // Initialize with default admin user if no users exist
-                    users = {
-                        Mitch: {
-                            username: 'Mitch',
-                            password: 'Mitch',
-                            role: 'admin'
-                        }
-                    };
-                    console.log('No users found, initializing with default:', users);
-                    try {
-                        await kv.put('users', JSON.stringify(users));
-                        console.log('Successfully initialized users in KV');
-                    } catch (error) {
-                        console.error('Error initializing users in KV:', error);
-                    }
-                }
+                console.log('Login attempt:', { username, password });
+                console.log('Default user:', defaultUser);
                 
-                console.log('Attempting login for user:', username);
-                console.log('Stored users:', users);
-                
-                const user = users[username];
-                console.log('Found user:', user);
-                console.log('Password match:', user ? (password === user.password) : 'no user found');
-                
-                if (user && password === user.password) {
+                if (username === defaultUser.username && password === defaultUser.password) {
                     const tokenData = {
-                        username: user.username,
-                        role: user.role,
+                        username: defaultUser.username,
+                        role: defaultUser.role,
                         timestamp: Date.now()
                     };
                     const token = btoa(JSON.stringify(tokenData));
@@ -80,8 +40,8 @@ export async function handleAuth(context) {
                     
                     return new Response(JSON.stringify({
                         token,
-                        username: user.username,
-                        role: user.role
+                        username: defaultUser.username,
+                        role: defaultUser.role
                     }), {
                         headers: {
                             'Content-Type': 'application/json',
@@ -95,9 +55,7 @@ export async function handleAuth(context) {
                     await logActivity(username, 'login', { 
                         success: false,
                         attemptedUsername: username,
-                        userExists: !!user,
-                        passwordMatch: user ? (password === user.password) : false,
-                        storedUsers: users
+                        passwordMatch: password === defaultUser.password
                     });
                     
                     return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
