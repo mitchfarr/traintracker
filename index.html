@@ -215,6 +215,14 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             z-index: 1000;
         }
+        .user-info a {
+            color: #3498db;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        .user-info a:hover {
+            text-decoration: underline;
+        }
         .password-modal {
             display: none;
             position: fixed;
@@ -264,9 +272,10 @@
 </head>
 <body>
     <div class="user-info">
-        Logged in as: <span id="currentUser">Guest</span>
-        <button onclick="logout()" style="margin-left: 10px;">Logout</button>
-        <button onclick="showPasswordModal()" style="margin-left: 10px;">Change Password</button>
+        <span>Logged in as: <strong id="username"></strong></span>
+        <a href="#" id="changePassword">Change Password</a>
+        <a href="#" id="logout">Logout</a>
+        <a href="/admin.html" id="adminLink" style="display: none;">Manage Users</a>
     </div>
 
     <div id="passwordModal" class="password-modal">
@@ -728,7 +737,15 @@
                 return;
             }
             
-            document.getElementById('currentUser').textContent = username;
+            document.getElementById('username').textContent = username;
+            
+            // Update user info display
+            const role = localStorage.getItem('role');
+            
+            // Show admin link if user is admin
+            if (role === 'admin') {
+                document.getElementById('adminLink').style.display = 'inline';
+            }
             
             // Initialize the application
             initializeApp();
